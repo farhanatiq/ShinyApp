@@ -1,0 +1,99 @@
+Reproducible Pitch
+========================================================
+author: Farhan Atiq
+date: 7/31/2017
+autosize: true
+
+Goal of this presentation 
+========================================================
+
+  For this project we are trying to examine the GDP per capita of each country to consolidate at a regional level
+  Data is transformed and taken from world bank repositories. Source : data.worldbank.org/
+  The Shiny app is uploaded here https://farhanatiq.shinyapps.io/data_product_assigment
+  The Source code can be found at github here https://github.com/farhanatiq/ShinyApp
+  
+  The data set consists of GDP per capita by country from 2000 - 2015
+  
+  
+
+
+Code Explaination - Global.r
+========================================================
+
+The code below is loading the data which would be common to both server and UI
+
+```{r}
+data <- read.csv(file='GDP.csv', header=TRUE)
+data$Region <- as.factor(data$Region)
+```
+
+UI.R
+========================================================
+
+```{r}
+
+library(shiny)
+
+shinyUI(fluidPage(
+
+  # Application title
+  titlePanel("GDP per capita by Region"),
+
+  # Sidebar with a slider input year
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("Region","Please select region",
+                  choices=c("South Asia","Europe & Central Asia","Middle East & North Africa","East Asia & Pacific","Sub-Saharan Africa"
+                            ,"Latin America & Caribbean","North America"))
+                  
+    ),
+
+    # Show a plot of the generated distribution
+    mainPanel(
+      plotOutput("distPlot")
+    )
+    
+  )
+  ))
+
+```
+
+Server.R
+========================================================
+
+Making use of ggplot to plot the graph,
+sqldf to group and sum at a regional level
+
+```{r}
+
+library(shiny)
+library(dplyr)
+library(sqldf)
+library(ggplot2)
+
+
+shinyServer(function(input, output) {
+
+  output$distPlot <- renderPlot({
+    
+  R  <- input$Region
+  Y  <- input$Year
+    
+  df <- sqldf('SELECT Region,Year, SUM(cast(GDP as numeric(18,2))) AS GDP, SUM(Life) AS Life FROM data 
+              GROUP BY Region,Year')
+  
+  GRP <- df %>%
+    filter(Region == input$Region) %>%
+    select(Year,GDP,Life) 
+
+  ggplot(data = GRP, aes(x = Year, y = GDP )) + geom_line() + geom_point()
+#  ggplot(data = GRP, aes(x = Year, y = Life )) + geom_line() + geom_point()
+  
+
+  })
+
+  
+})
+
+
+```
